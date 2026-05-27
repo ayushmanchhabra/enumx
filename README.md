@@ -37,6 +37,9 @@ clang stealth.o -o stealth.exe
 └─$ dig +short google.com
 8.8.8.8
 
+# Get src_ip
+└─$ ip addr show eth0
+
 # Understand CLI usage
 └─$ ./stealth.exe 
 Usage:
@@ -66,24 +69,15 @@ host,port,output
 "8.8.8.8",53,"open"
 "8.8.8.8",443,"open"
 "8.8.8.8",853,"open"
-"8.8.8.8",53,"open"
-"8.8.8.8",443,"open"
-"8.8.8.8",853,"open"
 ```
 
 ## Disclaimer
 
-DISCLAIMER
+**For authorized use only**. This tool is provided for educational and legitimate security testing purposes. You are solely responsible for obtaining proper authorization before use. Unauthorized use may be illegal.
 
-This software is provided for educational and authorized security testing purposes only.
+Provided "as is," with no warranties. The authors are not liable for any misuse or damages.
 
-The user is solely responsible for ensuring that they have proper authorization before using this tool against any systems, networks, or assets. Unauthorized use may be illegal and may result in civil or criminal penalties.
-
-The authors and contributors assume no liability and are not responsible for any misuse, damage, data loss, service disruption, or legal consequences resulting from the use of this software.
-
-This tool is provided "as is", without warranty of any kind, express or implied, including but not limited to the warranties of merchantability, fitness for a particular purpose, and non-infringement.
-
-Use at your own risk.
+_Use at your own risk._
 
 ## License
 
