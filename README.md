@@ -5,27 +5,12 @@ Single executable which performs enumeration.
 ## Getting Started
 
 ```shell
-git clone https://github.com/ayushmanchhabra/enumx
-cd enumx
-chmod +x ./enumx.sh
+git clone https://github.com/ayushmanchhabra/killchain
+cd killchain
+sudo apt install clang clang-format clang-tidy
 ```
 
 ## Usage
-
-enumx - subdomain and service enumeration
-
-```shell
-# Internet recon
-./enumx.sh example.com out.csv --mode=domain --ports=true
-
-# Internal network
-./enumx.sh 192.168.1.0/24 out.csv --mode=cidr --ports=true
-
-# From file
-./enumx.sh targets.txt out.csv --mode=file --ports=false
-```
-
-killchain - TCP half open scan
 
 ```shell
 # Compile binary

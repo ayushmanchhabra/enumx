@@ -8,9 +8,9 @@ TIDY_CHECKS = -checks=clang-analyzer-*,cert-*,bugprone-*,performance-*
 
 $(TARGET): $(OBJ)
 	$(CC) $(OBJ) -o $(TARGET)
-	shasum -a 256 ./$(SRC) > ./shasum.txt
-	shasum -a 256 ./$(TARGET) >> ./shasum.txt
-	shasum -a 256 ./Makefile >> ./shasum.txt
+	sha256sum ./$(SRC) > ./shasum.txt
+	sha256sum ./$(TARGET) >> ./shasum.txt
+	sha256sum ./Makefile >> ./shasum.txt
 
 $(OBJ): $(SRC)
 	$(CC) $(CFLAGS) -c $(SRC) -o $(OBJ)
