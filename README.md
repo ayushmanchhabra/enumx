@@ -4,8 +4,6 @@ Subdomain and service enumeration.
 
 ## Getting Started
 
-Note: Works on Linux based systems only.
-
 ```shell
 git clone https://github.com/ayushmanchhabra/enumx
 cd enumx
@@ -35,26 +33,42 @@ stealth - TCP half open scan
 clang -Wall -Wextra -Werror -c stealth.c -o stealth.o
 clang stealth.o -o stealth.exe
 
+# Get IP address
+└─$ dig +short google.com
+8.8.8.8
+
 # Understand CLI usage
-└─$ ./stealth.exe
-Usage: ./stealth.exe <dst_ip> <dst_port> <src_ip>
+└─$ ./stealth.exe 
+Usage:
+  ./stealth.exe <dst_ip> <src_ip> [output.csv]              # scan ports 1-65535
+  ./stealth.exe <dst_ip> <src_ip> [output.csv] --port <N>   # scan one port
 
-  Performs a TCP half-open (stealth) scan:
-    SYN     ->  target
-    SYN-ACK <-  target  (port open)
-    RST     ->  target  (tear down without completing handshake)
-
-  src_ip  Your real IP address (needed to receive the SYN-ACK).
+  CSV columns: host, port, output
   Requires root / CAP_NET_RAW.
 
 # Run a TCP half open scan.
-└─$ sudo ./stealth.exe 8.8.8.8 443 172.29.14.91
-[sudo] password for localghost: 
-[>] SYN      172.29.14.91:37396 -> 8.8.8.8:443    seq=202411727   bytes=40
-[*] Waiting for SYN-ACK (timeout 5s)...
-[<] SYN-ACK  8.8.8.8:443   -> *:37396    seq=1069742210  ack=202411728
-[>] RST      172.29.14.91:37396 -> 8.8.8.8:443    seq=202411728   bytes=40
-[+] Port 443 is OPEN  (half-open scan complete — connection reset)
+└─$ sudo ./stealth.exe 8.8.8.8 172.29.14.91 ./out.csv
+[*] Scanning 8.8.8.8 ports 1-65535 (src 172.29.14.91 sport 60000)...
+[<] SYN-ACK  8.8.8.8:53     OPEN
+[<] SYN-ACK  8.8.8.8:443    OPEN
+[<] SYN-ACK  8.8.8.8:853    OPEN
+[*] SYNs sent. Waiting 3s for responses...
+
+PORT      STATE
+53        open
+443       open
+853       open
+
+[*] Done. 3 open port(s).
+
+└─$ cat out.csv 
+host,port,output
+"8.8.8.8",53,"open"
+"8.8.8.8",443,"open"
+"8.8.8.8",853,"open"
+"8.8.8.8",53,"open"
+"8.8.8.8",443,"open"
+"8.8.8.8",853,"open"
 ```
 
 ## Disclaimer
