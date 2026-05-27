@@ -1,0 +1,46 @@
+name: ci
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: ${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  tests:
+    strategy:
+      matrix:
+        os:
+          # TODO: Add MacOS support
+          # - macos-26 
+          # - windows-2025 - Raw sockets on Windows have been heavily restricted since Windows XP SP2 (2004).
+          - ubuntu-24.04
+      fail-fast: false
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6.0.2
+
+      - name: Install dependencies
+        run: sudo apt install clang clang-format clang-tidy
+
+      - name: Check formatting
+        shell: bash
+        run: |
+          make format
+          git diff --exit-code
+
+      - name: Check for linting errors
+        shell: bash
+        run: make lint
+
+      - name: Check for build errors
+        shell: bash
+        run: make
