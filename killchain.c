@@ -1,5 +1,5 @@
 /*
- * stealth.c — TCP half-open (SYN) scanner
+ * killchain.c — TCP half-open (SYN) scanner
  *
  * Scans all ports 1-65535 on a target by default, or a single port if
  * supplied.  Uses one raw socket per direction:
@@ -10,8 +10,8 @@
  *   host, port, output
  *
  * Usage:
- *   sudo ./stealth <dst_ip> <src_ip> [output.csv]
- *   sudo ./stealth <dst_ip> <src_ip> [output.csv] --port <N>
+ *   sudo ./killchain <dst_ip> <src_ip> [output.csv]
+ *   sudo ./killchain <dst_ip> <src_ip> [output.csv] --port <N>
  *
  * Requires root / CAP_NET_RAW.
  */

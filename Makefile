@@ -1,13 +1,16 @@
 CC      = clang
 CFLAGS  = -Wall -Wextra -Werror
-TARGET  = stealth.exe
-OBJ     = stealth.o
-SRC     = stealth.c
+TARGET  = killchain.exe
+OBJ     = killchain.o
+SRC     = killchain.c
 
 TIDY_CHECKS = -checks=clang-analyzer-*,cert-*,bugprone-*,performance-*
 
 $(TARGET): $(OBJ)
 	$(CC) $(OBJ) -o $(TARGET)
+	shasum -a 256 ./$(SRC) > ./shasum.txt
+	shasum -a 256 ./$(TARGET) >> ./shasum.txt
+	shasum -a 256 ./Makefile >> ./shasum.txt
 
 $(OBJ): $(SRC)
 	$(CC) $(CFLAGS) -c $(SRC) -o $(OBJ)
