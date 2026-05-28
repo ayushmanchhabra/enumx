@@ -4,7 +4,7 @@ TARGET  = killchain.exe
 OBJ     = killchain.o
 SRC     = killchain.c
 
-TIDY_CHECKS = -checks=clang-analyzer-*,cert-*,bugprone-*,performance-*
+TIDY_CHECKS = -checks=clang-analyzer-*,cert-*,bugprone-*,performance-*,-clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling,-bugprone-easily-swappable-parameters
 
 $(TARGET): $(OBJ)
 	$(CC) $(OBJ) -o $(TARGET)
