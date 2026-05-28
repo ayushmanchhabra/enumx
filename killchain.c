@@ -11,7 +11,8 @@
  * where "output" contains detailed SYN-ACK info (seq, ack_seq, window).
  *
  * Usage:
- *   sudo ./killchain <dst_ip> [output.csv] [--src <ip>] [--port <N>] [--timeout <secs>]
+ *   sudo ./killchain <dst_ip> [output.csv] [--src <ip>] [--port <N>] [--timeout
+ * <secs>]
  *
  * Requires root / CAP_NET_RAW.
  */
@@ -31,20 +32,20 @@
 #include <unistd.h>
 
 /* ── Tunables ─────────────────────────────────────────────────────────── */
-#define DEFAULT_TTL    64
+#define DEFAULT_TTL 64
 #define DEFAULT_WINDOW 65535
-#define SRC_PORT_FIXED 60000  /* fixed sport so receiver can filter    */
-#define RECV_BUF_SIZE  65536
-#define DRAIN_SECS     5      /* default drain window (overridable)    */
-#define SEND_BATCH_US  500    /* µs sleep every BATCH_SIZE sends       */
-#define BATCH_SIZE     128    /* sends before each sleep               */
+#define SRC_PORT_FIXED 60000 /* fixed sport so receiver can filter    */
+#define RECV_BUF_SIZE 65536
+#define DRAIN_SECS 5      /* default drain window (overridable)    */
+#define SEND_BATCH_US 500 /* µs sleep every BATCH_SIZE sends       */
+#define BATCH_SIZE 128    /* sends before each sleep               */
 
 /* ── Port state table ─────────────────────────────────────────────────── */
 #define PORT_MAX 65535
 
 typedef enum { ST_UNKNOWN = 0, ST_OPEN, ST_CLOSED, ST_FILTERED } port_state_t;
 
-static port_state_t    g_state[PORT_MAX + 1];
+static port_state_t g_state[PORT_MAX + 1];
 static pthread_mutex_t g_state_mu = PTHREAD_MUTEX_INITIALIZER;
 
 /* Per-port SYN-ACK detail captured for CSV output */
@@ -89,23 +90,23 @@ static void csv_row(const char *host, int port, const char *output) {
 /* ── Types ────────────────────────────────────────────────────────────── */
 struct pseudo_header {
   uint32_t src, dst;
-  uint8_t  zero, proto;
+  uint8_t zero, proto;
   uint16_t tcp_len;
 };
 
 struct packet {
-  struct iphdr  ip;
+  struct iphdr ip;
   struct tcphdr tcp;
 };
 
 struct recv_args {
-  int           sock;
-  uint32_t      src_addr;
-  uint32_t      dst_addr;
-  uint16_t      sport;
+  int sock;
+  uint32_t src_addr;
+  uint32_t dst_addr;
+  uint16_t sport;
   volatile int *done;
-  const char   *dst_ip;
-  int           drain_secs;
+  const char *dst_ip;
+  int drain_secs;
 };
 
 /* ── strtol helpers ───────────────────────────────────────────────────── */
@@ -125,8 +126,8 @@ static int get_local_ip(const char *dst_ip, char *out, size_t out_len) {
     return -1;
 
   struct sockaddr_in dst = {
-      .sin_family      = AF_INET,
-      .sin_port        = htons(80),
+      .sin_family = AF_INET,
+      .sin_port = htons(80),
       .sin_addr.s_addr = inet_addr(dst_ip),
   };
 
@@ -164,29 +165,29 @@ static uint16_t checksum(const void *data, size_t len) {
 
 /* ── Packet builders ──────────────────────────────────────────────────── */
 static void fill_ip(struct iphdr *ip, uint32_t src, uint32_t dst) {
-  ip->version  = 4;
-  ip->ihl      = sizeof(struct iphdr) / 4;
-  ip->tot_len  = htons(sizeof(struct packet));
-  ip->id       = htons((uint16_t)(arc4random() & 0xffff));
+  ip->version = 4;
+  ip->ihl = sizeof(struct iphdr) / 4;
+  ip->tot_len = htons(sizeof(struct packet));
+  ip->id = htons((uint16_t)(arc4random() & 0xffff));
   ip->frag_off = htons(IP_DF);
-  ip->ttl      = DEFAULT_TTL;
+  ip->ttl = DEFAULT_TTL;
   ip->protocol = IPPROTO_TCP;
-  ip->saddr    = src;
-  ip->daddr    = dst;
+  ip->saddr = src;
+  ip->daddr = dst;
 }
 
 static void tcp_checksum(struct packet *pkt) {
   struct {
     struct pseudo_header ph;
-    struct tcphdr        tcp;
+    struct tcphdr tcp;
   } s;
   memset(&s, 0, sizeof(s));
-  s.ph.src     = pkt->ip.saddr;
-  s.ph.dst     = pkt->ip.daddr;
-  s.ph.proto   = IPPROTO_TCP;
+  s.ph.src = pkt->ip.saddr;
+  s.ph.dst = pkt->ip.daddr;
+  s.ph.proto = IPPROTO_TCP;
   s.ph.tcp_len = htons(sizeof(struct tcphdr));
   memcpy(&s.tcp, &pkt->tcp, sizeof(struct tcphdr));
-  s.tcp.check  = 0;
+  s.tcp.check = 0;
   pkt->tcp.check = checksum(&s, sizeof(s));
 }
 
@@ -195,10 +196,10 @@ static void make_syn(struct packet *pkt, uint32_t src, uint32_t dst,
   memset(pkt, 0, sizeof(*pkt));
   fill_ip(&pkt->ip, src, dst);
   pkt->tcp.source = htons(sport);
-  pkt->tcp.dest   = htons(dport);
-  pkt->tcp.seq    = htonl(arc4random());
-  pkt->tcp.doff   = sizeof(struct tcphdr) / 4;
-  pkt->tcp.syn    = 1;
+  pkt->tcp.dest = htons(dport);
+  pkt->tcp.seq = htonl(arc4random());
+  pkt->tcp.doff = sizeof(struct tcphdr) / 4;
+  pkt->tcp.syn = 1;
   pkt->tcp.window = htons(DEFAULT_WINDOW);
   tcp_checksum(pkt);
 }
@@ -208,10 +209,10 @@ static void make_rst(struct packet *pkt, uint32_t src, uint32_t dst,
   memset(pkt, 0, sizeof(*pkt));
   fill_ip(&pkt->ip, src, dst);
   pkt->tcp.source = htons(sport);
-  pkt->tcp.dest   = htons(dport);
-  pkt->tcp.seq    = htonl(seq);
-  pkt->tcp.doff   = sizeof(struct tcphdr) / 4;
-  pkt->tcp.rst    = 1;
+  pkt->tcp.dest = htons(dport);
+  pkt->tcp.seq = htonl(seq);
+  pkt->tcp.doff = sizeof(struct tcphdr) / 4;
+  pkt->tcp.rst = 1;
   tcp_checksum(pkt);
 }
 
@@ -233,8 +234,8 @@ static int open_raw_socket(void) {
 
 static int send_raw(int sock, struct packet *pkt) {
   struct sockaddr_in dst = {
-      .sin_family      = AF_INET,
-      .sin_port        = pkt->tcp.dest,
+      .sin_family = AF_INET,
+      .sin_port = pkt->tcp.dest,
       .sin_addr.s_addr = pkt->ip.daddr,
   };
   return (int)sendto(sock, pkt, sizeof(*pkt), 0, (struct sockaddr *)&dst,
@@ -246,7 +247,7 @@ static void *receiver(void *arg) {
   struct recv_args *a = (struct recv_args *)arg;
   char buf[RECV_BUF_SIZE];
 
-  int    rst_sock = open_raw_socket();
+  int rst_sock = open_raw_socket();
   time_t deadline = 0;
 
   while (1) {
@@ -272,8 +273,10 @@ static void *receiver(void *arg) {
     if (ip->protocol != IPPROTO_TCP)
       continue;
 
-    if (ip->saddr != a->dst_addr) continue;
-    if (ip->daddr != a->src_addr) continue;
+    if (ip->saddr != a->dst_addr)
+      continue;
+    if (ip->daddr != a->src_addr)
+      continue;
 
     const struct tcphdr *tcp = (const struct tcphdr *)(buf + ihl);
     if (ntohs(tcp->dest) != a->sport)
@@ -290,16 +293,16 @@ static void *receiver(void *arg) {
     }
 
     if (tcp->syn && tcp->ack) {
-      uint32_t their_seq    = ntohl(tcp->seq);
-      uint32_t their_ack    = ntohl(tcp->ack_seq);
+      uint32_t their_seq = ntohl(tcp->seq);
+      uint32_t their_ack = ntohl(tcp->ack_seq);
       uint16_t their_window = ntohs(tcp->window);
 
       pthread_mutex_lock(&g_state_mu);
       if (g_state[rport] != ST_OPEN) {
-        g_state[rport]          = ST_OPEN;
-        g_detail[rport].seq     = their_seq;
+        g_state[rport] = ST_OPEN;
+        g_detail[rport].seq = their_seq;
         g_detail[rport].ack_seq = their_ack;
-        g_detail[rport].window  = their_window;
+        g_detail[rport].window = their_window;
       }
       pthread_mutex_unlock(&g_state_mu);
 
@@ -320,9 +323,11 @@ static void *receiver(void *arg) {
 
 /* ── Usage ────────────────────────────────────────────────────────────── */
 static void usage(const char *prog) {
-  (void)fprintf(stderr,
+  (void)fprintf(
+      stderr,
       "Usage:\n"
-      "  %s <dst_ip> [output.csv] [--src <ip>] [--port <N>] [--timeout <secs>]\n\n"
+      "  %s <dst_ip> [output.csv] [--src <ip>] [--port <N>] [--timeout "
+      "<secs>]\n\n"
       "  --src <ip>       override auto-detected source IP\n"
       "  --port <N>       scan a single port instead of 1-65535\n"
       "  --timeout <secs> drain window after last SYN (default %d)\n\n"
@@ -340,11 +345,11 @@ int main(int argc, char *argv[]) {
     return EXIT_FAILURE;
   }
 
-  const char *dst_ip      = argv[1];
-  const char *csv_path    = NULL;
+  const char *dst_ip = argv[1];
+  const char *csv_path = NULL;
   const char *src_override = NULL;
-  int         one_port    = 0;
-  int         drain_secs  = DRAIN_SECS;
+  int one_port = 0;
+  int drain_secs = DRAIN_SECS;
 
   for (int i = 2; i < argc; i++) {
     if (strcmp(argv[i], "--src") == 0 && i + 1 < argc) {
@@ -376,7 +381,7 @@ int main(int argc, char *argv[]) {
     return EXIT_FAILURE;
   }
 
-  char       src_buf[INET_ADDRSTRLEN] = {0};
+  char src_buf[INET_ADDRSTRLEN] = {0};
   const char *src_ip;
 
   if (src_override) {
@@ -384,7 +389,7 @@ int main(int argc, char *argv[]) {
   } else {
     if (get_local_ip(dst_ip, src_buf, sizeof(src_buf)) < 0) {
       (void)fprintf(stderr,
-              "[-] Could not auto-detect source IP. Use --src <ip>\n");
+                    "[-] Could not auto-detect source IP. Use --src <ip>\n");
       return EXIT_FAILURE;
     }
     src_ip = src_buf;
@@ -401,7 +406,8 @@ int main(int argc, char *argv[]) {
     int is_new = (access(csv_path, F_OK) != 0);
     g_csv = fopen(csv_path, "a");
     if (!g_csv) {
-      (void)fprintf(stderr, "[-] Cannot open %s: %s\n", csv_path, strerror(errno));
+      (void)fprintf(stderr, "[-] Cannot open %s: %s\n", csv_path,
+                    strerror(errno));
       return EXIT_FAILURE;
     }
     if (is_new)
@@ -416,12 +422,12 @@ int main(int argc, char *argv[]) {
   volatile int recv_done = 0;
 
   struct recv_args ra = {
-      .sock       = recv_sock,
-      .src_addr   = src_addr,
-      .dst_addr   = dst_addr,
-      .sport      = SRC_PORT_FIXED,
-      .done       = &recv_done,
-      .dst_ip     = dst_ip,
+      .sock = recv_sock,
+      .src_addr = src_addr,
+      .dst_addr = dst_addr,
+      .sport = SRC_PORT_FIXED,
+      .done = &recv_done,
+      .dst_ip = dst_ip,
       .drain_secs = drain_secs,
   };
 
@@ -462,11 +468,8 @@ int main(int argc, char *argv[]) {
       open_count++;
 
       char out[128];
-      (void)snprintf(out, sizeof(out),
-               "open  seq=%u  ack_seq=%u  win=%u",
-               g_detail[p].seq,
-               g_detail[p].ack_seq,
-               g_detail[p].window);
+      (void)snprintf(out, sizeof(out), "open  seq=%u  ack_seq=%u  win=%u",
+                     g_detail[p].seq, g_detail[p].ack_seq, g_detail[p].window);
       csv_row(dst_ip, p, out);
     }
   }
@@ -478,7 +481,8 @@ int main(int argc, char *argv[]) {
     int first = 1;
     for (int p = port_lo; p <= port_hi; p++) {
       if (g_state[p] == ST_OPEN) {
-        if (!first) printf(",");
+        if (!first)
+          printf(",");
         printf("%d", p);
         first = 0;
       }
