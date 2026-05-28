@@ -26,17 +26,24 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6.0.2
+
       - name: Install dependencies
         uses: ConorMacBride/install-package@v1.1.0
         with:
-          brew: clang clang-format clang-tidy
+          brew: llvm
           apt: clang clang-format clang-tidy
-          choco: clang clang-format clang-tidy
+          choco: llvm make
+
       - name: Check formatting
+        shell: bash
         run: |
-              make format
-              git diff --exit-code
+          make format
+          git diff --exit-code
+
       - name: Check for linting errors
+        shell: bash
         run: make lint
+
       - name: Check for build errors
+        shell: bash
         run: make
