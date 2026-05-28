@@ -26,6 +26,12 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6.0.2
+      - name: Install dependencies
+        uses: ConorMacBride/install-package@v1
+        with:
+          brew: clang clang-format clang-tidy
+          apt: clang clang-format clang-tidy
+          choco: clang clang-format clang-tidy
       - name: Check formatting
         run: |
               make format
