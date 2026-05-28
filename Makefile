@@ -18,10 +18,8 @@ $(OBJ): $(SRC)
 format:
 	clang-format -i $(SRC)
 
-tidy:
-	clang-tidy $(TIDY_CHECKS) $(SRC) -- 
-
-lint: format tidy
+lint:
+	clang-tidy $(TIDY_CHECKS) $(SRC)
 
 clean:
 	rm -f $(OBJ) $(TARGET)
