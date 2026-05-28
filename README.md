@@ -1,6 +1,6 @@
 # killchain
 
-Single executable which performs enumeration.
+Super fast TCP scanner.
 
 ## Getting Started
 
