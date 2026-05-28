@@ -19,7 +19,7 @@ format:
 	clang-format -i $(SRC)
 
 lint:
-	clang-tidy $(TIDY_CHECKS) $(SRC)
+	clang-tidy $(TIDY_CHECKS) --warnings-as-errors='*' $(SRC) --
 
 clean:
 	rm -f $(OBJ) $(TARGET)
