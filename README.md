@@ -23,6 +23,7 @@ sha256sum ./killchain.c > ./shasum.txt
 sha256sum ./killchain.exe >> ./shasum.txt
 sha256sum ./Makefile >> ./shasum.txt
 
+# Learn the API
 └─$ ./killchain.exe 
 Usage:
   ./killchain.exe <dst_ip|cidr> [output.csv] [--src <ip>] [--port <N>]
@@ -42,6 +43,7 @@ Usage:
   CSV columns  : host, port, output
   output field : open  seq=<N>  ack_seq=<N>  win=<N>
   Requires root / CAP_NET_RAW.
+```
 
 ## Disclaimer
 
