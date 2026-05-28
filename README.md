@@ -4,6 +4,8 @@ Super fast TCP scanner.
 
 ## Getting Started
 
+> Note: Linux environment is required. This does not work on Windows since raw sockets have been heavily restricted since Windows XP SP2 (2004). MacOS support is possible (PR is welcome).
+
 ```shell
 git clone https://github.com/ayushmanchhabra/killchain
 cd killchain
