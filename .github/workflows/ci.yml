@@ -18,9 +18,10 @@ jobs:
     strategy:
       matrix:
         os:
-          - macos-26
+          # TODO: Add MacOS support
+          # - macos-26 
+          # - windows-2025 - Raw sockets on Windows have been heavily restricted since Windows XP SP2 (2004).
           - ubuntu-24.04
-          - windows-2025
       fail-fast: false
     runs-on: ${{ matrix.os }}
     steps:
@@ -28,15 +29,7 @@ jobs:
         uses: actions/checkout@v6.0.2
 
       - name: Install dependencies
-        uses: ConorMacBride/install-package@v1.1.0
-        with:
-          brew: llvm
-          apt: clang clang-format clang-tidy
-          choco: llvm make
-
-      - name: Add llvm to PATH on MacOS
-        if: runner.os == 'macOS'
-        run: echo "$(brew --prefix llvm)/bin" >> $GITHUB_PATH
+        run: clang clang-format clang-tidy
 
       - name: Check formatting
         shell: bash
