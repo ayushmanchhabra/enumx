@@ -26,4 +26,11 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6.0.2
-      - name: 
+      - name: Check formatting
+        run: |
+              make format
+              git diff --exit-code
+      - name: Check for linting errors
+        run: make lint
+      - name: Check for build errors
+        run: make
