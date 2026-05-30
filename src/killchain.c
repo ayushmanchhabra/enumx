@@ -5,6 +5,7 @@
 #include <time.h>
 
 #include "icmp.h"
+#include "ip.h"
 
 char time_buffer[20];
 
@@ -16,23 +17,51 @@ void getCurrentDate(char *buffer, size_t length) {
 
 int main(int argc, char *argv[]) {
   if (argc < 3) {
-    (void)fprintf(stderr,
-                  "Usage: killchain <IP> <-|out.csv|out.json|out.xml>");
+    (void)fprintf(stderr, "Usage: killchain <IP> <-|out.csv|out.json|out.xml>");
     return EXIT_FAILURE;
   } else {
     getCurrentDate(time_buffer, sizeof(time_buffer));
     (void)fprintf(stdout, "Starting scan on: %s\n", argv[1]);
     (void)fprintf(stdout, "Scan started: %s\n", time_buffer);
 
-    long latency = ping(argv[1]);
+    switch (validate_ipv4(argv[1])) {
+    case TYPE_IP: {
+      long latency = ping(argv[1]);
+      if (latency == -2) {
+        return EXIT_FAILURE;
+      } else if (latency == -1) {
+        (void)fprintf(stdout, "%-15s  DOWN\n", argv[1]);
+      } else {
+        (void)fprintf(stdout, "%-15s  ALIVE  latency=%ldms\n", argv[1],
+                      latency);
+      }
+      break;
+    }
+    case TYPE_CIDR: {
+      ip_list_t list = expand_cidr(argv[1]);
 
-    if (latency == -2) {
+      (void)fprintf(stdout, "[*] %lld hosts:\n", list.count);
+      for (long long i = 0; i < list.count; i++) {
+        long latency = ping(list.ips[i]);
+        if (latency == -2) {
+          free_ip_list(&list);
+          return EXIT_FAILURE;
+        } else if (latency == -1) {
+          (void)fprintf(stdout, "%-15s  DOWN\n", list.ips[i]);
+        } else {
+          (void)fprintf(stdout, "%-15s  ALIVE  latency=%ldms\n", list.ips[i],
+                        latency);
+        }
+      }
+      free_ip_list(&list);
+      break;
+    }
+    case TYPE_INVALID:
+      (void)fprintf(stderr,
+                    "Invalid format: %s (expected IPv4 or CIDR. For example, "
+                    "192.168.1.1 or 192.168.1.0/24)\n",
+                    argv[1]);
       return EXIT_FAILURE;
-    } else if (latency == -1) {
-      (void)fprintf(stdout, "%-15s  DOWN\n", argv[1]);
-    } else {
-      (void)fprintf(stdout, "%-15s  ALIVE  latency=%ldms\n", argv[1],
-                    latency);
     }
 
     getCurrentDate(time_buffer, sizeof(time_buffer));

@@ -25,7 +25,9 @@ unsigned short checksum(void *b, int len) {
 long ping(const char *ip) {
   int sock = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
   if (sock < 0) {
-    (void)fprintf(stderr, "ICMP requires root (CAP_NET_RAW). Run with sudo.\n");
+    (void)fprintf(
+        stderr,
+        "ICMP requires uses CAP_NET_RAW which required root. Run with sudo.\n");
     return -2;
   }
 
@@ -50,9 +52,9 @@ long ping(const char *ip) {
 
   if (sendto(sock, &pkt, sizeof(pkt), 0, (struct sockaddr *)&dest,
              sizeof(dest)) <= 0) {
-    perror("[!] sendto");
+    (void)fprintf(stderr, "Failed to send ICMP packet to %s\n", ip);
     close(sock);
-    return -1;
+    return -2;
   }
 
   char buf[1024];

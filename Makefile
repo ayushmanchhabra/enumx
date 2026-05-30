@@ -30,7 +30,7 @@ format:
 	clang-format -i $(SRCS)
 
 lint:
-	clang-tidy $(TIDY_CHECKS) --warnings-as-errors='*' $(SRCS) --
+	clang-tidy $(TIDY_CHECKS) --warnings-as-errors='*' $(SRCS) -- -I$(INCDIR)
 
 shasum:
 	find $(SRCDIR) $(OBJDIR) $(BINDIR) -maxdepth 1 -type f | sort | xargs sha256sum > shasum.txt
