@@ -32,8 +32,5 @@ format:
 lint:
 	clang-tidy $(TIDY_CHECKS) --warnings-as-errors='*' $(SRCS) -- -I$(INCDIR)
 
-shasum:
-	find $(SRCDIR) $(OBJDIR) $(BINDIR) -maxdepth 1 -type f | sort | xargs sha256sum > shasum.txt
-
 clean:
 	rm -rf $(OBJDIR) $(BINDIR) shasum.txt

@@ -39,11 +39,17 @@ int main(int argc, char *argv[]) {
     }
     case TYPE_CIDR: {
       ip_list_t list = expand_cidr(argv[1]);
+      long *latencies = ping_hosts(list.ips, list.count);
+      if (!latencies) {
+        free_ip_list(&list);
+        return EXIT_FAILURE;
+      }
 
       (void)fprintf(stdout, "[*] %lld hosts:\n", list.count);
       for (long long i = 0; i < list.count; i++) {
-        long latency = ping(list.ips[i]);
+        long latency = latencies[i];
         if (latency == -2) {
+          free(latencies);
           free_ip_list(&list);
           return EXIT_FAILURE;
         } else if (latency == -1) {
@@ -53,6 +59,8 @@ int main(int argc, char *argv[]) {
                         latency);
         }
       }
+
+      free(latencies);
       free_ip_list(&list);
       break;
     }
