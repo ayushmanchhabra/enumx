@@ -23,7 +23,8 @@ unsigned short checksum(void *b, int len) {
   return ~sum;
 }
 
-static long compute_latency(const struct timeval *start, const struct timeval *end) {
+static long compute_latency(const struct timeval *start,
+                            const struct timeval *end) {
   return (end->tv_sec - start->tv_sec) * 1000 +
          (end->tv_usec - start->tv_usec) / 1000;
 }
@@ -87,8 +88,8 @@ long *ping_hosts(char **ips, long long count) {
   while (remaining > 0) {
     struct sockaddr_in reply;
     socklen_t reply_len = sizeof(reply);
-    ssize_t len = recvfrom(sock, buf, sizeof(buf), 0,
-                           (struct sockaddr *)&reply, &reply_len);
+    ssize_t len = recvfrom(sock, buf, sizeof(buf), 0, (struct sockaddr *)&reply,
+                           &reply_len);
     if (len <= 0) {
       break;
     }

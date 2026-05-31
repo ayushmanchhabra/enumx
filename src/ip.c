@@ -80,7 +80,8 @@ ip_list_t expand_cidr(const char *cidr) {
 
   char *endptr = NULL;
   long prefix_value = strtol(slash + 1, &endptr, 10);
-  if (endptr == slash + 1 || *endptr != '\0' || prefix_value < 0 || prefix_value > 32) {
+  if (endptr == slash + 1 || *endptr != '\0' || prefix_value < 0 ||
+      prefix_value > 32) {
     (void)fprintf(stderr, "[!] Invalid prefix length: %s\n", slash + 1);
     return result;
   }
