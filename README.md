@@ -1,6 +1,7 @@
 # killchain
 
-Super fast TCP scanner.
+About
+Purple teamer
 
 ## Getting Started
 
@@ -18,14 +19,9 @@ sudo apt install clang clang-format clang-tidy
 # Compile binary
 └─$ make
 
-# API Usage (like sqlmap user interface, cache input wherever possible)
-└─$ ./killchain
-  Usage: killchain <IP|CIDR> <-|out.{csv,json,xml}>
-  -> IP -> remote (ICMP) or local (ARP) subnet
-  -> Host status -> Y/n
-  -> Check open ports via SYN scan -> y/N
-  -> service check via banner grabbing -> y/N
-  -> output -> (-)stdout/(c)sv/(j)son/(x)ml
+# API 
+└─$ ./out/bin/killchain
+Usage: killchain <IP> <-|out.csv|out.json|out.xml>
 ```
 
 ## Disclaimer
