@@ -60,8 +60,6 @@ int main(int argc, char *argv[]) {
           if (latencies[i] >= 0) {
             (void)fprintf(stdout, "%-16s UP      %4ld ms\n", ips[i],
                           latencies[i]);
-          } else {
-            (void)fprintf(stdout, "%-16s DOWN     -\n", ips[i]);
           }
           free(ips[i]);
         }
@@ -78,20 +76,57 @@ int main(int argc, char *argv[]) {
   printf("\n");
 
   if (consent == 'y' || consent == 'Y') {
-    int *ports = tcp_syn(argv[1]);
-    if (!ports) {
-      perror("tcp_syn");
-      exit(1);
-    }
+    int scan_type = check_ip_or_subnet(argv[1]);
+    int found_total = 0;
 
-    (void)printf("%-16s %-8s %s\n", "HOST", "PORT", "STATE");
-    int found = 0;
-    for (int i = 0; ports[i] != -1; i++) {
-      (void)printf("%-16s %-8d %s\n", argv[1], ports[i], "OPEN");
-      found++;
+    if (scan_type == 1) {
+      int *ports = tcp_syn(argv[1]);
+      if (!ports) {
+        perror("tcp_syn");
+        exit(1);
+      }
+
+      (void)printf("%-16s %-8s %s\n", "HOST", "PORT", "STATE");
+      int found = 0;
+      for (int i = 0; ports[i] != -1; i++) {
+        (void)printf("%-16s %-8d %s\n", argv[1], ports[i], "OPEN");
+        found++;
+      }
+      (void)printf("\n%d open port(s) found.\n", found);
+      free(ports);
+      found_total = found;
+
+    } else if (scan_type == 2) {
+      (void)fprintf(stdout, "Subnet detected: %s\n", argv[1]);
+      int count;
+      char **ips = expand_subnet(argv[1], &count);
+      if (!ips || count <= 0) {
+        (void)fprintf(stdout, "No hosts to scan in subnet %s\n", argv[1]);
+        free(ips);
+      } else {
+        (void)printf("%-16s %-8s %s\n", "HOST", "PORT", "STATE");
+        for (int h = 0; h < count; h++) {
+          int *ports = tcp_syn(ips[h]);
+          if (!ports) {
+            (void)fprintf(stderr, "tcp_syn failed for %s\n", ips[h]);
+            continue;
+          }
+          int found = 0;
+          for (int p = 0; ports[p] != -1; p++) {
+            (void)printf("%-16s %-8d %s\n", ips[h], ports[p], "OPEN");
+            found++;
+          }
+          found_total += found;
+          free(ports);
+        }
+        for (int i = 0; i < count; i++)
+          free(ips[i]);
+        free(ips);
+        (void)printf("\n%d open port(s) found across subnet.\n", found_total);
+      }
+    } else {
+      (void)fprintf(stdout, "Invalid IP or subnet: %s\n", argv[1]);
     }
-    (void)printf("\n%d open port(s) found.\n", found);
-    free(ports);
   }
 
   get_current_datetime(time_buffer, sizeof(time_buffer));
