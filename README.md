@@ -21,7 +21,7 @@ sudo apt install clang clang-format clang-tidy
 
 # API 
 └─$ ./out/bin/killchain
-Usage: killchain <IP> <-|out.csv|out.json|out.xml>
+Usage: killchain <IP> <->
 ```
 
 ## Disclaimer
