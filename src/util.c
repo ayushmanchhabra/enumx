@@ -1,3 +1,5 @@
+#include <arpa/inet.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -40,76 +42,35 @@ int check_ip_or_subnet(const char *str) {
   return 1;
 }
 
-// Parse "a.b.c.d" into 4 octets. Returns 0 on failure.
-int parse_ip(const char *str, int oct[4]) {
-  return sscanf(str, "%d.%d.%d.%d", &oct[0], &oct[1], &oct[2], &oct[3]) == 4;
-}
+// Returns a heap-allocated array of IP strings, sets count.
+// Caller must free: for (int i = 0; i < count; i++) free(ips[i]); free(ips);
+char **expand_subnet(const char *cidr, int *count) {
+  char ip_str[18];
+  int prefix;
+  sscanf(cidr, "%[^/]/%d", ip_str, &prefix);
 
-// Returns: 0 = public, 1 = private, -1 = invalid
-int check_public_or_private(const char *str) {
-  int o[4];
-  if (!parse_ip(str, o))
-    return -1;
-  for (int i = 0; i < 4; i++)
-    if (o[i] < 0 || o[i] > 255)
-      return -1;
+  uint32_t ip;
+  inet_pton(AF_INET, ip_str, &ip);
+  ip = ntohl(ip);
 
-  // 10.0.0.0/8
-  if (o[0] == 10)
-    return 1;
-  // 172.16.0.0/12  (172.16–172.31)
-  if (o[0] == 172 && o[1] >= 16 && o[1] <= 31)
-    return 1;
-  // 192.168.0.0/16
-  if (o[0] == 192 && o[1] == 168)
-    return 1;
-  // 127.0.0.0/8  (loopback)
-  if (o[0] == 127)
-    return 1;
-  // 169.254.0.0/16 (link-local)
-  if (o[0] == 169 && o[1] == 254)
-    return 1;
+  uint32_t netmask = prefix ? (~0u << (32 - prefix)) : 0;
+  uint32_t network = ip & netmask;
+  uint32_t broadcast = network | ~netmask;
 
-  return 0;
-}
+  *count = broadcast - network - 1; // exclude network + broadcast
+  if (*count <= 0) {
+    *count = 0;
+    return NULL;
+  }
 
-int ip_is_private(int o[4]) {
-  for (int i = 0; i < 4; i++)
-    if (o[i] < 0 || o[i] > 255)
-      return -1;
-  if (o[0] == 10)
-    return 1; // 10.0.0.0/8
-  if (o[0] == 172 && o[1] >= 16 && o[1] <= 31)
-    return 1; // 172.16.0.0/12
-  if (o[0] == 192 && o[1] == 168)
-    return 1; // 192.168.0.0/16
-  if (o[0] == 127)
-    return 1; // loopback
-  if (o[0] == 169 && o[1] == 254)
-    return 1; // link-local
-  return 0;
-}
+  char **ips = malloc(*count * sizeof(char *));
+  for (int i = 0; i < *count; i++) {
+    uint32_t be = htonl(network + 1 + i);
+    ips[i] = malloc(16);
+    inet_ntop(AF_INET, &be, ips[i], 16);
+  }
 
-// Returns: 0 = public, 1 = private, -1 = invalid
-int check_subnet_public_or_private(const char *str) {
-  char buf[64];
-  strncpy(buf, str, sizeof(buf) - 1);
-  buf[sizeof(buf) - 1] = '\0';
-
-  char *slash = strchr(buf, '/');
-  if (!slash)
-    return -1;
-  *slash = '\0';
-
-  char *end;
-  long prefix = strtol(slash + 1, &end, 10);
-  if (*end != '\0' || prefix < 0 || prefix > 32)
-    return -1;
-
-  int o[4];
-  if (!parse_ip(buf, o))
-    return -1;
-  return ip_is_private(o);
+  return ips;
 }
 
 void get_current_datetime(char *buffer, size_t length) {

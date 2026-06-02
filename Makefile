@@ -15,13 +15,15 @@ TIDY_CHECKS = -checks=clang-analyzer-*,cert-*,bugprone-*,performance-*,-clang-an
 all: $(TARGET)
 
 $(TARGET): $(OBJS) | $(BINDIR)
-	$(CC) $(OBJS) -o $(TARGET)
+	$(CC) -g $(OBJS) -o $(TARGET)
+	objcopy --only-keep-debug $(TARGET) $(TARGET).debug
+	objcopy --strip-debug --add-gnu-debuglink=$(TARGET).debug $(TARGET)
 	sha256sum $(SRCS) > shasum.txt
 	sha256sum $(TARGET) >> shasum.txt
 	sha256sum Makefile >> shasum.txt
 
 $(OBJDIR)/%.o: $(SRCDIR)/%.c | $(OBJDIR)
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(CC) $(CFLAGS) -g -c $< -o $@
 
 $(OBJDIR) $(BINDIR):
 	mkdir -p $@

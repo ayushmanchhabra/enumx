@@ -39,23 +39,3 @@ _Use at your own risk._
 ## License
 
 MIT
-
-
-## Notes
-
-```shell
-
-killchain/
-├── Makefile
-├── include/
-│   ├── icmp.h
-│   ├── arp.h
-│   ├── scan.h
-│   └── utils.h
-└── src/
-    ├── main.c       ← entry point, arg parsing, orchestration
-    ├── icmp.c       ← icmp_ping()
-    ├── arp.c        ← arp_ping()
-    ├── scan.c       ← decides icmp vs arp, expand_cidr, syn_scan
-    └── utils.c      ← checksum, logging, time, output formatting
-```

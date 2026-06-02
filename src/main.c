@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "icmp.h"
 #include "util.h"
 
 char time_buffer[20];
@@ -16,31 +17,61 @@ int main(int argc, char *argv[]) {
     (void)fprintf(stdout, "Starting scan on: %s\n", argv[1]);
     (void)fprintf(stdout, "Scan started: %s\n", time_buffer);
 
-    if (check_ip_or_subnet(argv[1]) == 1) {
-      if (check_public_or_private(argv[1]) == 1) {
-        (void)fprintf(stdout, "Private IP detected: %s\n", argv[1]);
-      } else if (check_public_or_private(argv[1]) == 0) {
-        (void)fprintf(stdout, "Public IP detected: %s\n", argv[1]);
+    char consent;
+    printf("Do you want to check if host(s) are up? (y/n): ");
+    scanf(" %c", &consent);
+    printf("\n");
+
+    int type = check_ip_or_subnet(argv[1]);
+    if (consent == 'y' || consent == 'Y') {
+      if (type == 1) {
+        (void)fprintf(stdout, "IP address detected: %s\n\n", argv[1]);
+        long latency = ping(argv[1]);
+        if (latency == -2) {
+          return EXIT_FAILURE;
+        } else if (latency >= 0) {
+          (void)fprintf(stdout, "%-16s UP      %4ld ms\n", argv[1], latency);
+        } else {
+          (void)fprintf(stdout, "%-16s DOWN    %4ld ms\n", argv[1], latency);
+        }
+
+      } else if (type == 2) {
+        (void)fprintf(stdout, "Subnet detected: %s\n", argv[1]);
+        int count;
+        char **ips = expand_subnet(argv[1], &count);
+        if (!ips || count <= 0) {
+          (void)fprintf(stdout, "No hosts to scan in subnet %s\n", argv[1]);
+          free(ips);
+        } else {
+          long *latencies = ping_hosts(ips, count);
+          if (!latencies) {
+            (void)fprintf(stderr, "Failed to perform subnet ping scan.\n");
+            for (int i = 0; i < count; i++) {
+              free(ips[i]);
+            }
+            free(ips);
+            return EXIT_FAILURE;
+          }
+
+          (void)fprintf(stdout, "\n%-16s %-8s %s\n", "HOST", "STATUS",
+                        "LATENCY");
+          for (int i = 0; i < count; i++) {
+            if (latencies[i] > 0) {
+              (void)fprintf(stdout, "%-16s UP      %4ld ms\n", ips[i],
+                            latencies[i]);
+            }
+            free(ips[i]);
+          }
+          free(latencies);
+          free(ips);
+        }
       } else {
-        (void)fprintf(stderr, "Invalid IP address: %s\n", argv[1]);
-        return EXIT_FAILURE;
+        (void)fprintf(stdout, "Invalid IP or subnet: %s\n", argv[1]);
       }
-    } else if (check_ip_or_subnet(argv[1]) == 2) {
-      if (check_subnet_public_or_private(argv[1]) == 1) {
-        (void)fprintf(stdout, "Private subnet detected: %s\n", argv[1]);
-      } else if (check_subnet_public_or_private(argv[1]) == 0) {
-        (void)fprintf(stdout, "Public subnet detected: %s\n", argv[1]);
-      } else {
-        (void)fprintf(stderr, "Invalid subnet: %s\n", argv[1]);
-        return EXIT_FAILURE;
-      }
-    } else {
-      (void)fprintf(stderr, "Invalid IP or subnet: %s\n", argv[1]);
-      return EXIT_FAILURE;
     }
 
     get_current_datetime(time_buffer, sizeof(time_buffer));
-    (void)fprintf(stdout, "Scan complete: %s\n", time_buffer);
+    (void)fprintf(stdout, "\nScan complete: %s\n", time_buffer);
     if (strcmp(argv[2], "-") != 0) {
       (void)fprintf(stdout, "Scan results saved in: %s\n", argv[2]);
     }
