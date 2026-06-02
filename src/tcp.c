@@ -26,6 +26,7 @@ typedef struct {
   uint32_t src_ip;    /* network byte order, filled by sender   */
   volatile int send_done;
   int open_ports[MAX_OPEN];
+  uint8_t seen_ports[LAST_PORT + 1];
   volatile int open_count;
 } scan_ctx;
 
@@ -196,9 +197,16 @@ static void *receiver_thread(void *arg) {
     struct tcphdr *tcp = (struct tcphdr *)(buf + ip_hlen);
 
     if (tcp->syn && tcp->ack) {
-      int idx = __sync_fetch_and_add(&ctx->open_count, 1);
-      if (idx < MAX_OPEN)
-        ctx->open_ports[idx] = ntohs(tcp->source);
+      int port = ntohs(tcp->source);
+      if (port >= FIRST_PORT && port <= LAST_PORT) {
+        /* deduplicate */
+        if (!ctx->seen_ports[port]) {
+          ctx->seen_ports[port] = 1;
+          int idx = __sync_fetch_and_add(&ctx->open_count, 1);
+          if (idx < MAX_OPEN)
+            ctx->open_ports[idx] = port;
+        }
+      }
     }
   }
 
