@@ -1,4 +1,5 @@
 #include <errno.h>
+#include <fcntl.h>
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -119,17 +120,43 @@ static void *sender_thread(void *arg) {
       .sin_addr.s_addr = ctx->target_ip,
   };
   uint8_t pkt[sizeof(struct iphdr) + sizeof(struct tcphdr)];
+  /* Try to make socket non-blocking so sendto won't hang indefinitely */
+  int flags = fcntl(ctx->sock, F_GETFL, 0);
+  if (flags >= 0) {
+    (void)fcntl(ctx->sock, F_SETFL, flags | O_NONBLOCK);
+  }
 
   for (int port = FIRST_PORT; port <= LAST_PORT; port++) {
     dst.sin_port = htons((uint16_t)port);
     int len = build_syn(pkt, ctx->src_ip, ctx->target_ip, SOURCE_PORT,
                         (uint16_t)port);
-    sendto(ctx->sock, pkt, (size_t)len, 0, (struct sockaddr *)&dst,
-           sizeof(dst));
-    if (port % 10000 == 0)
+
+    int retries = 0;
+    while (1) {
+      ssize_t r = sendto(ctx->sock, pkt, (size_t)len, 0,
+                         (struct sockaddr *)&dst, sizeof(dst));
+      if (r >= 0) {
+        break; /* sent */
+      }
+      if (errno == EAGAIN || errno == EWOULDBLOCK) {
+        /* send buffer full; wait briefly and retry a few times */
+        if (++retries > 5) {
+          /* give up on this port and move on */
+          break;
+        }
+        usleep(1000); /* 1ms backoff */
+        continue;
+      }
+      /* other error: break and continue with next port */
+      break;
+    }
+
+    if ((port % 10000) == 0)
       usleep(1000);
   }
 
+  /* Ensure the send_done flag is visible to the receiver thread */
+  __sync_synchronize();
   ctx->send_done = 1;
   return NULL;
 }
