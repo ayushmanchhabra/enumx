@@ -4,6 +4,7 @@
 #include <string.h>
 
 #include "icmp.h"
+#include "tcp.h"
 #include "util.h"
 
 char time_buffer[20];
@@ -27,6 +28,7 @@ int main(int argc, char *argv[]) {
       if (type == 1) {
         (void)fprintf(stdout, "IP address detected: %s\n\n", argv[1]);
         long latency = ping(argv[1]);
+        (void)fprintf(stdout, "%-16s %-8s %s\n", "HOST", "STATUS", "LATENCY");
         if (latency == -2) {
           return EXIT_FAILURE;
         } else if (latency >= 0) {
@@ -68,6 +70,23 @@ int main(int argc, char *argv[]) {
       } else {
         (void)fprintf(stdout, "Invalid IP or subnet: %s\n", argv[1]);
       }
+    }
+
+    printf("\nDo you want to check which port(s) are open? (y/n): ");
+    scanf(" %c", &consent);
+    printf("\n");
+
+    if (consent == 'y' || consent == 'Y') {
+      (void)fprintf(stdout, "%-16s %-8s %s\n", "HOST", "PORT", "STATUS");
+      int *ports = tcp_syn(argv[1]);
+      if (!ports) {
+        perror("tcp_syn");
+        exit(1);
+      }
+
+      for (int i = 0; ports[i] != -1; i++)
+        printf("open: %d\n", ports[i]);
+      free(ports);
     }
 
     get_current_datetime(time_buffer, sizeof(time_buffer));

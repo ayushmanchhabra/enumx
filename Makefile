@@ -1,5 +1,5 @@
 CC      = clang
-CFLAGS  = -Wall -Wextra -Werror -I$(INCDIR)
+CFLAGS  = -Wall -Wextra -Werror -O2 -pthread -I$(INCDIR)
 SRCDIR  = src
 INCDIR  = include
 OBJDIR  = out/obj
