@@ -1,6 +1,5 @@
 # killchain
 
-About
 Purple teamer
 
 ## Getting Started
