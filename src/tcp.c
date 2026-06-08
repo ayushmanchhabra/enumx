@@ -38,8 +38,7 @@ struct pseudo_hdr {
   uint16_t tcp_len;
 };
 
-static uint16_t checksum(const void *data, int len) {
-  const uint16_t *ptr = data;
+static uint16_t checksum(const uint16_t *ptr, int len) {
   uint32_t sum = 0;
   while (len > 1) {
     sum += *ptr++;
@@ -78,14 +77,14 @@ static int build_syn(uint8_t *buf, uint32_t src_ip, uint32_t dst_ip,
   struct {
     struct pseudo_hdr ph;
     struct tcphdr th;
-  } pseudo;
+  } pseudo = {0};
   pseudo.ph.src = src_ip;
   pseudo.ph.dst = dst_ip;
   pseudo.ph.zero = 0;
   pseudo.ph.proto = IPPROTO_TCP;
   pseudo.ph.tcp_len = htons(sizeof(struct tcphdr));
   pseudo.th = *tcp;
-  tcp->check = checksum(&pseudo, sizeof(pseudo));
+  tcp->check = checksum((const uint16_t *)&pseudo, (int)sizeof(pseudo));
 
   return (int)(sizeof(struct iphdr) + sizeof(struct tcphdr));
 }
@@ -120,7 +119,7 @@ static void *sender_thread(void *arg) {
       .sin_family = AF_INET,
       .sin_addr.s_addr = ctx->target_ip,
   };
-  uint8_t pkt[sizeof(struct iphdr) + sizeof(struct tcphdr)];
+  uint8_t pkt[sizeof(struct iphdr) + sizeof(struct tcphdr)] = {0};
   /* Try to make socket non-blocking so sendto won't hang indefinitely */
   int flags = fcntl(ctx->sock, F_GETFL, 0);
   if (flags >= 0) {
@@ -191,7 +190,7 @@ static void *receiver_thread(void *arg) {
       continue;
 
     int ip_hlen = ip->ihl * 4;
-    if ((size_t)n < (size_t)(ip_hlen + (int)sizeof(struct tcphdr)))
+    if ((size_t)n < (size_t)ip_hlen + sizeof(struct tcphdr))
       continue;
 
     struct tcphdr *tcp = (struct tcphdr *)(buf + ip_hlen);
@@ -252,8 +251,12 @@ int *tcp_syn(const char *ip) {
   pthread_t tid_recv, tid_send;
   if (pthread_create(&tid_recv, NULL, receiver_thread, ctx) != 0)
     goto err;
-  if (pthread_create(&tid_send, NULL, sender_thread, ctx) != 0)
+  if (pthread_create(&tid_send, NULL, sender_thread, ctx) != 0) {
+    /* FIX: recv thread is running; signal it to stop and join before cleanup */
+    ctx->send_done = 1;
+    pthread_join(tid_recv, NULL);
     goto err;
+  }
 
   pthread_join(tid_send, NULL);
 
@@ -265,8 +268,10 @@ int *tcp_syn(const char *ip) {
   pthread_join(tid_recv, NULL);
   close(ctx->sock);
 
-  /* Sort results and build the returned array */
+  /* FIX: clamp count to MAX_OPEN to prevent out-of-bounds qsort/memcpy */
   int count = ctx->open_count;
+  if (count > MAX_OPEN)
+    count = MAX_OPEN;
   qsort(ctx->open_ports, (size_t)count, sizeof(int), cmp_int);
 
   int *result = malloc((size_t)(count + 1) * sizeof(int));

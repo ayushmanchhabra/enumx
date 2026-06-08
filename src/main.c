@@ -21,7 +21,7 @@ int main(int argc, char *argv[]) {
 
   char consent;
   printf("Do you want to check if host(s) are up? (y/n): ");
-  scanf(" %c", &consent);
+  (void)scanf(" %c", &consent);
   printf("\n");
 
   int type = check_ip_or_subnet(argv[1]);
@@ -44,14 +44,18 @@ int main(int argc, char *argv[]) {
       char **ips = expand_subnet(argv[1], &count);
       if (!ips || count <= 0) {
         (void)fprintf(stdout, "No hosts to scan in subnet %s\n", argv[1]);
-        free(ips);
+        if (ips) {
+          for (int i = 0; i < count; i++)
+            free(ips[i]);
+          free((void *)ips);
+        }
       } else {
         long *latencies = ping_hosts(ips, count);
         if (!latencies) {
           (void)fprintf(stderr, "Failed to perform subnet ping scan.\n");
           for (int i = 0; i < count; i++)
             free(ips[i]);
-          free(ips);
+          free((void *)ips);
           return EXIT_FAILURE;
         }
 
@@ -64,7 +68,7 @@ int main(int argc, char *argv[]) {
           free(ips[i]);
         }
         free(latencies);
-        free(ips);
+        free((void *)ips);
       }
     } else {
       (void)fprintf(stdout, "Invalid IP or subnet: %s\n", argv[1]);
@@ -72,7 +76,7 @@ int main(int argc, char *argv[]) {
   }
 
   printf("\nDo you want to check which port(s) are open? (y/n): ");
-  scanf(" %c", &consent);
+  (void)scanf(" %c", &consent);
   printf("\n");
 
   if (consent == 'y' || consent == 'Y') {
@@ -94,7 +98,6 @@ int main(int argc, char *argv[]) {
       }
       (void)printf("\n%d open port(s) found.\n", found);
       free(ports);
-      found_total = found;
 
     } else if (scan_type == 2) {
       (void)fprintf(stdout, "Subnet detected: %s\n", argv[1]);
@@ -102,7 +105,11 @@ int main(int argc, char *argv[]) {
       char **ips = expand_subnet(argv[1], &count);
       if (!ips || count <= 0) {
         (void)fprintf(stdout, "No hosts to scan in subnet %s\n", argv[1]);
-        free(ips);
+        if (ips) {
+          for (int i = 0; i < count; i++)
+            free(ips[i]);
+          free((void *)ips);
+        }
       } else {
         (void)printf("%-16s %-8s %s\n", "HOST", "PORT", "STATE");
         for (int h = 0; h < count; h++) {
@@ -121,7 +128,7 @@ int main(int argc, char *argv[]) {
         }
         for (int i = 0; i < count; i++)
           free(ips[i]);
-        free(ips);
+        free((void *)ips);
         (void)printf("\n%d open port(s) found across subnet.\n", found_total);
       }
     } else {

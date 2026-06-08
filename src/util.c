@@ -1,4 +1,5 @@
 #include <arpa/inet.h>
+#include <limits.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -46,27 +47,55 @@ int check_ip_or_subnet(const char *str) {
 // Caller must free: for (int i = 0; i < count; i++) free(ips[i]); free(ips);
 char **expand_subnet(const char *cidr, int *count) {
   char ip_str[18];
-  int prefix;
-  sscanf(cidr, "%[^/]/%d", ip_str, &prefix);
+
+  /* Replace sscanf with explicit parsing to satisfy cert-err33/cert-err34 */
+  const char *slash = strchr(cidr, '/');
+  if (!slash || (size_t)(slash - cidr) >= sizeof(ip_str)) {
+    *count = 0;
+    return NULL;
+  }
+  memcpy(ip_str, cidr, (size_t)(slash - cidr));
+  ip_str[slash - cidr] = '\0';
+
+  char *end;
+  long prefix = strtol(slash + 1, &end, 10);
+  if (*end != '\0' || prefix < 0 || prefix > 32) {
+    *count = 0;
+    return NULL;
+  }
 
   uint32_t ip;
   inet_pton(AF_INET, ip_str, &ip);
   ip = ntohl(ip);
 
-  uint32_t netmask = prefix ? (~0u << (32 - prefix)) : 0;
+  uint32_t netmask = prefix ? (~0u << (32 - (int)prefix)) : 0;
   uint32_t network = ip & netmask;
   uint32_t broadcast = network | ~netmask;
 
-  *count = broadcast - network - 1; // exclude network + broadcast
-  if (*count <= 0) {
+  /* Fix narrowing: compute in uint32_t, then bounds-check before storing */
+  uint32_t host_count = broadcast - network - 1; // exclude network + broadcast
+  if (host_count == 0 || host_count > (uint32_t)INT_MAX) {
+    *count = 0;
+    return NULL;
+  }
+  *count = (int)host_count;
+
+  char **ips = (char **)malloc((size_t)*count * sizeof(char *));
+  if (!ips) {
     *count = 0;
     return NULL;
   }
 
-  char **ips = malloc(*count * sizeof(char *));
   for (int i = 0; i < *count; i++) {
-    uint32_t be = htonl(network + 1 + i);
     ips[i] = malloc(16);
+    if (!ips[i]) {
+      for (int j = 0; j < i; j++)
+        free(ips[j]);
+      free((void *)ips);
+      *count = 0;
+      return NULL;
+    }
+    uint32_t be = htonl(network + 1 + (uint32_t)i);
     inet_ntop(AF_INET, &be, ips[i], 16);
   }
 
