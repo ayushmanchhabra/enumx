@@ -10,7 +10,7 @@ OBJS    = $(patsubst $(SRCDIR)/%.c,$(OBJDIR)/%.o,$(SRCS))
 
 TIDY_CHECKS = -checks=clang-analyzer-*,cert-*,bugprone-*,performance-*,-clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling,-bugprone-easily-swappable-parameters
 
-.PHONY: all clean format lint sha256
+.PHONY: all clean format lint check
 
 all: $(TARGET)
 
@@ -33,6 +33,11 @@ format:
 
 lint:
 	clang-tidy $(TIDY_CHECKS) --warnings-as-errors='*' $(SRCS) -- -I$(INCDIR)
+
+check: $(TARGET)
+	sudo valgrind --leak-check=full --track-origins=yes \
+		--extra-debuginfo-path=$(BINDIR) \
+		$(TARGET) 127.0.0.1 - || true
 
 clean:
 	rm -rf $(OBJDIR) $(BINDIR) shasum.txt
