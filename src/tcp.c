@@ -77,13 +77,14 @@ static int build_syn(uint8_t *buf, uint32_t src_ip, uint32_t dst_ip,
   struct {
     struct pseudo_hdr ph;
     struct tcphdr th;
-  } pseudo = {0};
+  } pseudo;
+  memset(&pseudo, 0, sizeof(pseudo));
   pseudo.ph.src = src_ip;
   pseudo.ph.dst = dst_ip;
-  pseudo.ph.zero = 0;
   pseudo.ph.proto = IPPROTO_TCP;
   pseudo.ph.tcp_len = htons(sizeof(struct tcphdr));
-  pseudo.th = *tcp;
+  memcpy(&pseudo.th, tcp, sizeof(struct tcphdr));
+  pseudo.th.check = 0;
   tcp->check = checksum((const uint16_t *)&pseudo, (int)sizeof(pseudo));
 
   return (int)(sizeof(struct iphdr) + sizeof(struct tcphdr));
