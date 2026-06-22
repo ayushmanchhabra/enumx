@@ -51,6 +51,14 @@ Scan complete: 2026-06-22 20:03:22
 
 ```
 
+## Roadmap
+
+- [ ] Subnet host check with `S. No` and `use 4` like in Metasploit
+- [ ] Complete TCP handshake to get service info on specific ports (`nmap -sCV` ...)
+- [ ] Auto search for vulnerabilities using NIST, Shodan, etc based on service info (integrate with searchsploit and metasploit)
+- [ ] If single IP, pull IPDR information
+- [ ] Capture MAC addresses on network if TCP handshake is completed
+
 ## Disclaimer
 
 **For authorized use only**. This tool is provided for educational and legitimate security testing purposes. You are solely responsible for obtaining proper authorization before use. Unauthorized use may be illegal.
