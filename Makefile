@@ -35,9 +35,7 @@ lint:
 	clang-tidy $(TIDY_CHECKS) --warnings-as-errors='*' $(SRCS) -- -I$(INCDIR)
 
 check: $(TARGET)
-	sudo valgrind --leak-check=full --track-origins=yes \
-		--extra-debuginfo-path=$(BINDIR) \
-		$(TARGET) 127.0.0.1 - || true
+	sudo valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes --extra-debuginfo-path=$(BINDIR) \$(TARGET) 8.8.8.8 - || true
 
 clean:
 	rm -rf $(OBJDIR) $(BINDIR) shasum.txt
