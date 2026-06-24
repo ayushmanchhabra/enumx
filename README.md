@@ -24,7 +24,6 @@ sudo apt install clang clang-format clang-tidy valgrind
 └─$ sudo ./out/bin/killchain
 Usage: killchain <IP|CIDR> <-|out.csv|out.json|out.xml>
 
-┌──(localghost㉿Ayush)-[~/ayushmanchhabra/killchain]
 └─$ sudo ./out/bin/killchain 8.8.8.8 -
 [!] By using this tool you confirm you have explicit permission to test the target.
 Unauthorized use is illegal and is your sole responsibility. Proceed? (y/n): y
